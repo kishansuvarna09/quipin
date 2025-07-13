@@ -124,9 +124,11 @@
     }
 
     #status {
-      margin-top: 12px;
+      width: 100%;
+      display: grid;
+      place-items: center;
+      padding: 8px 0;
       font-size: 13px;
-      text-align: center;
       color: #aaa;
     }
   </style>
@@ -140,16 +142,26 @@
     </div>
     <h4>Your personal, smart and witty reply assistant</h4>
 
-    <div class="form-group">
+    <div class="platform-settings" data-platform="linkedin">
+      <h2>LinkedIn Settings</h2>
+      <!-- LinkedIn-specific settings -->
+    </div>
+
+    <div class="platform-settings" data-platform="reddit">
+      <h2>Reddit Settings</h2>
+      <!-- Reddit-specific settings -->
+    </div>
+
+    <!-- Shared settings like API key -->
+    <div id="api-key-section" style="display: none;">
       <label for="apiKey">OpenAI API Key</label>
       <div class="api-wrapper">
         <input id="apiKey" type="text" placeholder="Enter your API key..." />
         <button id="remove" title="Remove API Key">🗑️</button>
       </div>
-    </div>
-
-    <div class="btn-group">
-      <button id="save">Save</button>
+      <div class="btn-group">
+        <button id="save">Save</button>
+      </div>
     </div>
 
     <div id="status"></div>

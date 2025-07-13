@@ -1,3 +1,5 @@
+const supportedPlatforms = ["linkedin.com", "reddit.com"];
+
 // Saves API key to chrome.storage
 const saveOptions = () => {
   const apiKey = document.getElementById("apiKey").value.trim();
@@ -18,11 +20,39 @@ const removeOptions = () => {
   });
 };
 
-// Restores API key from chrome.storage
-const restoreOptions = () => {
-  chrome.storage.sync.get({ apiKey: "" }, (items) => {
-    const hasKey = !!items.apiKey;
-    updateUI(hasKey);
+const initializeOptions = () => {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const url = tabs[0].url || "";
+
+    let matchedPlatform = null;
+
+    supportedPlatforms.forEach((platform) => {
+      if (url.includes(platform)) {
+        matchedPlatform = platform.split(".")[0]; // "linkedin.com" -> "linkedin"
+      }
+    });
+
+    // Show only the matching platform section
+    document.querySelectorAll(".platform-settings").forEach((section) => {
+      if (section.dataset.platform === matchedPlatform) {
+        section.style.display = "block";
+      } else {
+        section.style.display = "none";
+      }
+    });
+
+    // Show/hide API key section
+    const apiKeySection = document.getElementById("api-key-section");
+    if (matchedPlatform) {
+      apiKeySection.style.display = "block";
+      chrome.storage.sync.get({ apiKey: "" }, (items) => {
+        updateUI(!!items.apiKey);
+      });
+    } else {
+      apiKeySection.style.display = "none";
+      document.getElementById("status").textContent =
+        "This extension only supports supported platforms.";
+    }
   });
 };
 
@@ -55,6 +85,6 @@ const updateUI = (hasKey) => {
 };
 
 // Event bindings
-document.addEventListener("DOMContentLoaded", restoreOptions);
+document.addEventListener("DOMContentLoaded", initializeOptions);
 document.getElementById("save").addEventListener("click", saveOptions);
 document.getElementById("remove").addEventListener("click", removeOptions);

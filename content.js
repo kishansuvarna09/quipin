@@ -30,11 +30,34 @@ const addSuggestionButton = (commentBox) => {
     "artdeco-button--circle"
   );
   button.type = "button";
-  button.innerHTML =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-lightbulb-fill" viewBox="0 0 16 16"><path d="M2 6a6 6 0 1 1 10.174 4.31c-.203.196-.359.4-.453.619l-.762 1.769A.5.5 0 0 1 10.5 13h-5a.5.5 0 0 1-.46-.302l-.761-1.77a2 2 0 0 0-.453-.618A5.98 5.98 0 0 1 2 6m3 8.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1l-.224.447a1 1 0 0 1-.894.553H6.618a1 1 0 0 1-.894-.553L5.5 15a.5.5 0 0 1-.5-.5"/></svg>';
+  const buttonOriginalTitle = "Get QuipIn suggestion";
+  button.title = buttonOriginalTitle;
+  const bulbIcon = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-lightbulb-fill" viewBox="0 0 16 16">
+      <path d="M2 6a6 6 0 1 1 10.174 4.31c-.203.196-.359.4-.453.619l-.762 1.769A.5.5 0 0 1 10.5 13h-5a.5.5 0 0 1-.46-.302l-.761-1.77a2 2 0 0 0-.453-.618A5.98 5.98 0 0 1 2 6m3 8.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1l-.224.447a1 1 0 0 1-.894.553H6.618a1 1 0 0 1-.894-.553L5.5 15a.5.5 0 0 1-.5-.5"/>
+    </svg>`;
+  button.innerHTML = bulbIcon;
   button.addEventListener("click", async () => {
+    const originalIcon = bulbIcon;
+    const spinnerIcon = `
+      <svg class="quipin-spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+        <path fill="currentColor" d="M8 3a.5.5 0 0 1 .5-.5h.832a.5.5 0 0 1 .48.364 5.5 5.5 0 1 1-6.577 6.577.5.5 0 0 1 .364-.48V8.5a.5.5 0 0 1 .5-.5H8Z">
+          <animateTransform attributeName="transform" type="rotate" from="0 8 8" to="360 8 8" dur="0.75s" repeatCount="indefinite"/>
+        </path>
+      </svg>`;
+
+    button.disabled = true;
+    button.innerHTML = spinnerIcon;
+    button.title = "Generating QuipIn suggestion. This may take a few seconds...";
+
     const suggestion = await fetchSuggestion(createPrompt(commentBox));
-    commentBox.querySelector(".ql-editor").innerHTML = `<p>${suggestion}</p>`;
+    button.disabled = false;
+    button.innerHTML = originalIcon;
+    button.title = buttonOriginalTitle;
+
+    if (suggestion) {
+      commentBox.querySelector(".ql-editor").innerHTML = `<p>${suggestion}</p>`;
+    }
   });
   const editorDiv = commentBox.querySelector(
     ".comments-comment-box-comment__text-editor"
@@ -54,33 +77,54 @@ const fetchSuggestion = async (prompt) => {
   if (!apiKey) {
     return "";
   }
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    body: JSON.stringify({
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are an assistant, that writes replies to LinkedIn posts to other persons. Use the same language as of the text of the post you are recieving in the user's prompt. Please sound like a human being. Don't use hashtags, use emojis occasionally, don't repeat too many of the exact words, but simply create a brief and positive reply.  Maybe add something to the discussion. Be creative! You may mention the name of the author, if it's the name of a natural person. Don't mention the name if it's the name of a company or a LinkedIn group.",
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 1,
-      max_tokens: 256,
-      top_p: 0.7,
-      frequency_penalty: 2,
-      presence_penalty: 2,
-    }),
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-  });
-  return (await response.json()).choices[0].message.content.trim();
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      body: JSON.stringify({
+        model: "gpt-4",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are an assistant, that writes replies to LinkedIn posts to other persons. Use the same language as of the text of the post you are recieving in the user's prompt. Please sound like a human being. Don't use hashtags, use emojis occasionally, don't repeat too many of the exact words, but simply create a brief and positive reply.  Maybe add something to the discussion. Be creative! You may mention the name of the author, if it's the name of a natural person. Don't mention the name if it's the name of a company or a LinkedIn group.",
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        temperature: 1,
+        max_tokens: 256,
+        top_p: 0.7,
+        frequency_penalty: 2,
+        presence_penalty: 2,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+    });
+    return (await response.json()).choices[0].message.content.trim();
+  } catch(error) {
+    console.error("Error fetching suggestion:", error);
+    alert("Failed to fetch suggestion. Please check your API key and network connection.");
+    
+    const allButtons = document.querySelectorAll("button[title='Get QuipIn suggestion']");
+    allButtons.forEach((btn) => {
+      btn.style.borderColor = "#f44336";
+      btn.style.color = "#f44336";
+      btn.title = "Error: Check your API key or network connection";
+
+      // Optional: revert style after 3 seconds
+      setTimeout(() => {
+        btn.style.borderColor = "";
+        btn.style.color = "";
+        btn.title = "Get QuipIn suggestion";
+      }, 3000);
+    });
+
+    return "";
+  }
 };
 
 const createPrompt = (commentBox) => {

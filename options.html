@@ -6,14 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>QuipIn</title>
   <style>
-    html, body {
-        width: 460px;
-        height: 260px;
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        box-sizing: border-box;
+    html,
+    body {
+      width: 460px;
+      height: 260px;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      box-sizing: border-box;
     }
+
     body {
       background-color: #1e1e1e;
       color: #f0f0f0;
@@ -23,21 +25,20 @@
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      margin: 0;
       padding: 24px;
     }
 
     .container {
-        width: 100%;
-        height: 100%;
-        box-sizing: border-box;
-        overflow: hidden;
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+      overflow: hidden;
     }
 
     .header {
       display: flex;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 8px;
     }
 
     #icon {
@@ -47,8 +48,15 @@
     }
 
     h1 {
-      font-size: 24px;
+      font-size: 22px;
       margin: 0;
+    }
+
+    h4 {
+      font-weight: normal;
+      font-size: 14px;
+      margin: 0 0 16px 0;
+      color: #aaa;
     }
 
     label {
@@ -58,25 +66,50 @@
       color: #ccc;
     }
 
-    input[type="text"] {
+    .form-group {
       width: 100%;
+    }
+
+    .api-wrapper {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+    }
+
+    #apiKey {
+      flex: 1;
       padding: 10px;
       border: none;
-      margin-bottom: 16px;
+      border-radius: 6px;
       font-size: 14px;
       background-color: #444;
       color: #fff;
-      outline: none;
+      height: 42px;
+      box-sizing: border-box;
+      outline: none
+    }
+
+    #remove {
+      padding: 0 14px;
+      background-color: #f44336;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      color: white;
+      height: 42px;
+      box-sizing: border-box;
+      display: none;
     }
 
     .btn-group {
       display: flex;
-      justify-content: space-between;
-      gap: 10px;
+      justify-content: flex-end;
+      width: 100%;
+      margin-top: 16px;
     }
 
-    button {
-      flex: 1;
+    #save {
       padding: 10px 16px;
       background-color: #4caf50;
       border: none;
@@ -84,11 +117,6 @@
       font-size: 14px;
       color: white;
       cursor: pointer;
-      transition: background-color 0.3s;
-    }
-
-    button#remove {
-      background-color: #f44336;
     }
 
     button:hover {
@@ -96,7 +124,7 @@
     }
 
     #status {
-      margin-top: 16px;
+      margin-top: 12px;
       font-size: 13px;
       text-align: center;
       color: #aaa;
@@ -111,14 +139,22 @@
       <h1>QuipIn</h1>
     </div>
     <h4>Your personal, smart and witty reply assistant</h4>
-    <label for="apiKey">OpenAI API Key</label>
-    <input id="apiKey" type="text" placeholder="Paste your OpenAI API key here..." />
+
+    <div class="form-group">
+      <label for="apiKey">OpenAI API Key</label>
+      <div class="api-wrapper">
+        <input id="apiKey" type="text" placeholder="Enter your API key..." />
+        <button id="remove" title="Remove API Key">🗑️</button>
+      </div>
+    </div>
+
     <div class="btn-group">
       <button id="save">Save</button>
-      <button id="remove">Remove</button>
     </div>
+
     <div id="status"></div>
   </div>
+
   <script src="options.js"></script>
 </body>
 

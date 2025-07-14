@@ -9,7 +9,7 @@
     html,
     body {
       width: 460px;
-      height: 260px;
+      height: 350px;
       margin: 0;
       padding: 0;
       overflow: hidden;
@@ -124,10 +124,18 @@
     }
 
     #status {
-      margin-top: 12px;
+      width: 100%;
+      display: grid;
+      place-items: center;
+      padding: 8px 0;
       font-size: 13px;
-      text-align: center;
       color: #aaa;
+    }
+
+    #preferred-model-options {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
     }
   </style>
 </head>
@@ -135,21 +143,46 @@
 <body>
   <div class="container">
     <div class="header">
-      <img src="icon.png" id="icon" alt="QuipIn Logo" />
+      <img src="logo.png" id="icon" alt="QuipIn Logo" />
       <h1>QuipIn</h1>
     </div>
     <h4>Your personal, smart and witty reply assistant</h4>
+  
+    <div class="platform-settings" data-platform="linkedin">
+      <h3>LinkedIn Settings</h3>
+      <!-- LinkedIn-specific settings -->
+    </div>
+
+    <div class="platform-settings" data-platform="reddit">
+      <h3>Reddit Settings</h3>
+      <!-- Reddit-specific settings -->
+    </div>
 
     <div class="form-group">
+      <label>Preferred Model</label>
+      <div id="preferred-model-options">
+        <label>
+          <input type="radio" name="model" value="openai" id="modelOpenAI" />
+          OpenAI (GPT-4)
+        </label>
+        <br />
+        <label>
+          <input type="radio" name="model" value="gemini" id="modelGemini" />
+          Gemini (Flash 2.5)
+        </label>
+      </div>
+    </div>
+
+    <!-- Shared settings like API key -->
+    <div id="api-key-section" style="display: none;">
       <label for="apiKey">OpenAI API Key</label>
       <div class="api-wrapper">
         <input id="apiKey" type="text" placeholder="Enter your API key..." />
         <button id="remove" title="Remove API Key">🗑️</button>
       </div>
-    </div>
-
-    <div class="btn-group">
-      <button id="save">Save</button>
+      <div class="btn-group">
+        <button id="save">Save</button>
+      </div>
     </div>
 
     <div id="status"></div>

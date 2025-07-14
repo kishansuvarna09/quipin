@@ -1,84 +1,88 @@
-const USE_GEMINI = true;
-
-const loadApiKey = async () => {
+const loadPreferences = async () => {
   return new Promise((resolve) => {
-    chrome.storage.sync.get("apiKey", (data) => {
+    chrome.storage.sync.get(["apiKey", "selectedModel"], (data) => {
       if (!data.apiKey) {
-        alert("Please set your OpenAI API key in the extension options.");
+        alert("Please set your API key in the extension options.");
       }
-      resolve(data.apiKey);
+      resolve(data);
     });
   });
 };
 
 const fetchSummary = async (prompt) => {
-  if (USE_GEMINI) {
-    return await fetchSummaryGemini(prompt);
-  } else {
-    return await fetchSummaryOpenAI(prompt);
-  }
+    const { apiKey, selectedModel } = await loadPreferences();
+
+    if (!apiKey) return "";
+
+    if (selectedModel === "gemini") {
+        return await fetchSummaryGemini(prompt, apiKey);
+    } else {
+        return await fetchSummaryOpenAI(prompt, apiKey);
+    }
 };
 
-const fetchSummaryOpenAI = async (prompt) => {
-  const apiKey = await loadApiKey();
-  if (!apiKey) return "";
+const fetchSummaryOpenAI = async (prompt, apiKey) => {
+    if (!apiKey) {
+        alert("Please set your Gemini API key in the extension options.");
+    }
 
-  try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4",
-        messages: [
-          {
-            role: "system",
-            content: "You are a helpful assistant that summarizes Reddit posts or subreddits.",
-          },
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-        max_tokens: 150,
-        temperature: 0.7,
-      }),
-    });
-
-    const json = await response.json();
-    return json.choices?.[0]?.message?.content?.trim() || "⚠️ No summary received.";
-  } catch (err) {
-    console.error("OpenAI error:", err);
-    return "⚠️ Failed to fetch from OpenAI.";
-  }
-};
-
-const fetchSummaryGemini = async (prompt) => {
-  const apiKey = await loadApiKey(); // Same chrome.storage API key reuse
-  if (!apiKey) return "";
-
-  try {
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + apiKey,
-      {
+    try {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
+            model: "gpt-4",
+            messages: [
+            {
+                role: "system",
+                content: "You are a helpful assistant that summarizes Reddit posts or subreddits.",
+            },
+            {
+                role: "user",
+                content: prompt,
+            },
+            ],
+            max_tokens: 150,
+            temperature: 0.7,
         }),
-      }
-    );
+        });
 
-    const json = await response.json();
-    return json.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "⚠️ No summary received.";
-  } catch (err) {
-    console.error("Gemini error:", err);
-    return "⚠️ Failed to fetch from Gemini.";
-  }
+        const json = await response.json();
+        return json.choices?.[0]?.message?.content?.trim() || "⚠️ No summary received.";
+    } catch (err) {
+        console.error("OpenAI error:", err);
+        return "⚠️ Failed to fetch from OpenAI.";
+    }
+};
+
+const fetchSummaryGemini = async (prompt, apiKey) => {
+    if (!apiKey) {
+        alert("Please set your Gemini API key in the extension options.");
+    }
+
+    try {
+        const response = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + apiKey,
+        {
+            method: "POST",
+            headers: {
+            "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            }),
+        }
+        );
+
+        const json = await response.json();
+        return json.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "⚠️ No summary received.";
+    } catch (err) {
+        console.error("Gemini error:", err);
+        return "⚠️ Failed to fetch from Gemini.";
+    }
 };
 
 const summarizePost = async (postEl) => {

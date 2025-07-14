@@ -20,6 +20,14 @@ const removeOptions = () => {
   });
 };
 
+// Saves model (radio button) immediately on change
+const handleModelChange = (e) => {
+  const selectedModel = e.target.value;
+  chrome.storage.sync.set({ selectedModel }, () => {
+    showStatus(`Model preference saved: ${selectedModel}`);
+  });
+};
+
 const initializeOptions = () => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const url = tabs[0].url || "";
@@ -45,8 +53,14 @@ const initializeOptions = () => {
     const apiKeySection = document.getElementById("api-key-section");
     if (matchedPlatform) {
       apiKeySection.style.display = "block";
-      chrome.storage.sync.get({ apiKey: "" }, (items) => {
+      chrome.storage.sync.get({ apiKey: "", selectedModel: "openai" }, (items) => {
         updateUI(!!items.apiKey);
+
+        // Set radio selection from storage
+        const radios = document.querySelectorAll('input[name="model"]');
+        radios.forEach((radio) => {
+          radio.checked = radio.value === items.selectedModel;
+        });
       });
     } else {
       apiKeySection.style.display = "none";
@@ -85,6 +99,14 @@ const updateUI = (hasKey) => {
 };
 
 // Event bindings
-document.addEventListener("DOMContentLoaded", initializeOptions);
-document.getElementById("save").addEventListener("click", saveOptions);
-document.getElementById("remove").addEventListener("click", removeOptions);
+document.addEventListener("DOMContentLoaded", () => {
+  initializeOptions();
+
+  // Register immediate save for model radio buttons
+  document.querySelectorAll('input[name="model"]').forEach((radio) => {
+    radio.addEventListener("change", handleModelChange);
+  });
+
+  document.getElementById("save").addEventListener("click", saveOptions);
+  document.getElementById("remove").addEventListener("click", removeOptions);
+});

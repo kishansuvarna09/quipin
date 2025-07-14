@@ -12,43 +12,58 @@ const loadPreferences = async () => {
 const fetchSummary = async (prompt) => {
     const { apiKey, selectedModel } = await loadPreferences();
 
-    if (!apiKey) return "";
+    if (!apiKey) return "⚠️ Please set your API key in the extension options.";
 
+    try {
     if (selectedModel === "gemini") {
-        return await fetchSummaryGemini(prompt, apiKey);
+      return await fetchSummaryGemini(prompt, apiKey );
     } else {
-        return await fetchSummaryOpenAI(prompt, apiKey);
+      return await fetchSummaryOpenAI(prompt, apiKey);
     }
+  } catch (err) {
+    console.error(`${selectedModel.toUpperCase()} error:`, err);
+    alert(`Failed to fetch from ${selectedModel.toUpperCase()}. Check API key or network.`);
+    showErrorOnAllButtons();
+    return "";
+  }
 };
 
 const fetchSummaryOpenAI = async (prompt, apiKey) => {
     if (!apiKey) {
-        alert("Please set your Gemini API key in the extension options.");
+        return "⚠️ Please set your OpenAPI API key in the extension options.";
     }
 
     try {
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-            model: "gpt-4",
-            messages: [
-            {
-                role: "system",
-                content: "You are a helpful assistant that summarizes Reddit posts or subreddits.",
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${apiKey}`,
             },
-            {
-                role: "user",
-                content: prompt,
-            },
-            ],
-            max_tokens: 150,
-            temperature: 0.7,
-        }),
+            body: JSON.stringify({
+                model: "gpt-4",
+                messages: [
+                {
+                    role: "system",
+                    content: "You are a helpful assistant that summarizes Reddit posts or subreddits.",
+                },
+                {
+                    role: "user",
+                    content: prompt,
+                },
+                ],
+                max_tokens: 150,
+                temperature: 0.7,
+            }),
         });
+
+        console.log('response', response);
+        
+
+        if (response.status === 401) {
+            showErrorOnAllButtons("❌ Unauthorized: Invalid OpenAI API key");
+            return "⚠️ Unauthorized (401): Check your OpenAI API key.";
+        }
 
         const json = await response.json();
         return json.choices?.[0]?.message?.content?.trim() || "⚠️ No summary received.";
@@ -60,22 +75,27 @@ const fetchSummaryOpenAI = async (prompt, apiKey) => {
 
 const fetchSummaryGemini = async (prompt, apiKey) => {
     if (!apiKey) {
-        alert("Please set your Gemini API key in the extension options.");
+        return "⚠️ Please set your Gemini API key in the extension options.";
     }
 
     try {
         const response = await fetch(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + apiKey,
-        {
-            method: "POST",
-            headers: {
-            "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-            }),
-        }
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + apiKey,
+            {
+                method: "POST",
+                headers: {
+                "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                }),
+            }
         );
+
+        if (response.status === 401) {
+            showErrorOnAllButtons("❌ Unauthorized: Invalid Gemini API key");
+            return "⚠️ Unauthorized (401): Check your Gemini API key.";
+        }
 
         const json = await response.json();
         return json.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "⚠️ No summary received.";
@@ -85,28 +105,54 @@ const fetchSummaryGemini = async (prompt, apiKey) => {
     }
 };
 
+const showErrorOnAllButtons = () => {
+  const buttons = document.querySelectorAll(".quipin-summary-btn");
+
+  buttons.forEach((btn) => {
+    btn.style.borderColor = "#f44336";
+    btn.style.color = "#f44336";
+    btn.title = "Error: Check your API key or network connection";
+
+    // revert style after 3 seconds
+    setTimeout(() => {
+      btn.style.borderColor = "#ccc";
+      btn.style.color = "";
+      btn.title = "🌟 QuipIn - Summarize Post";
+    }, 3000);
+  });
+};
+
 const summarizePost = async (postEl) => {
-  if (postEl.getAttribute("data-summarized") === "true") return;
+    const existingSummary = postEl.querySelector(".quipin-summary-box");
+    if (existingSummary) {
+        existingSummary.remove();
+    }
 
-  const subreddit = window.location.pathname.split("/")[2]; // 'r/javascript'
-  const title = postEl.querySelector("h3")?.innerText || "";
-  const body = postEl.innerText || "";
+    const summaryBox = document.createElement("div");
+    summaryBox.className = "quipin-summary-box";
+    summaryBox.style.marginTop = "12px";
+    summaryBox.style.padding = "10px";
+    summaryBox.style.border = "1px solid #ccc";
+    summaryBox.style.borderRadius = "6px";
+    summaryBox.style.background = "#f6f7f8";
+    summaryBox.style.fontSize = "14px";
 
-  const prompt = `Summarize the following Reddit post from r/${subreddit} in 2–3 sentences:\n\nTitle: ${title}\n\nContent: ${body}`;
+    if (postEl.getAttribute("data-summarized") === "true") {
+        summaryBox.innerText = "⚠️ This post has already been summarized.";
+    } else {
+        const subreddit = window.location.pathname.split("/")[2]; // 'r/javascript'
+        const title = postEl.querySelector("h3")?.innerText || "";
+        const body = postEl.innerText || "";
 
-  const summary = await fetchSummary(prompt);
+        const prompt = `Summarize the following Reddit post from r/${subreddit} in 2–3 sentences:\n\nTitle: ${title}\n\nContent: ${body}`;
 
-  const summaryBox = document.createElement("div");
-  summaryBox.style.marginTop = "12px";
-  summaryBox.style.padding = "10px";
-  summaryBox.style.border = "1px solid #ccc";
-  summaryBox.style.borderRadius = "6px";
-  summaryBox.style.background = "#f6f7f8";
-  summaryBox.style.fontSize = "14px";
-  summaryBox.innerText = summary;
+        const summary = await fetchSummary(prompt);
 
-  postEl.appendChild(summaryBox);
-  postEl.setAttribute("data-summarized", "true");
+        summaryBox.innerText = summary;
+    }
+
+    postEl.appendChild(summaryBox);
+    postEl.setAttribute("data-summarized", "true");
 };
 
 const addSummaryButton = (postEl) => {

@@ -57,9 +57,6 @@ const fetchSummaryOpenAI = async (prompt, apiKey) => {
             }),
         });
 
-        console.log('response', response);
-        
-
         if (response.status === 401) {
             showErrorOnAllButtons("❌ Unauthorized: Invalid OpenAI API key");
             return "⚠️ Unauthorized (401): Check your OpenAI API key.";
